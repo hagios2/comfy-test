@@ -84,6 +84,66 @@ class InsurancePolicyTest extends TestCase
             ]);
     }
 
+    /**
+     * * @dataProvider getAppliedFilters
+     */
+    public function testFilterByKeyword($filterBy, $value, $assertion, $count)
+    {
+        $user = $this->createUser();
+        Passport::actingAs($user);
+        $user->assignRole('User');
+
+        $customer1 = Customer::factory()->create(['name' => 'John Doe']);
+        $customer2 = Customer::factory()->create(['name' => 'Jane Smith']);
+
+        InsurancePolicy::factory()->create([
+            'policy_no' => 'POLICY-12345',
+            'policy_type' => 'Health',
+            'status' => 'Active',
+            'created_at' => now()->subDays(10),
+            'customer_id' => $customer1->id,
+        ]);
+
+        InsurancePolicy::factory()->create([
+            'policy_no' => 'POLICY-67890-12345',
+            'policy_type' => 'Life',
+            'status' => 'Expired',
+            'created_at' => now()->subDays(5),
+            'customer_id' => $customer2->id,
+        ]);
+
+        InsurancePolicy::factory()->create([
+            'policy_no' => 'POLICY-99999',
+            'policy_type' => 'Health',
+            'status' => 'Pending',
+            'created_at' => now(),
+            'customer_id' => $customer2->id,
+        ]);
+
+        $this->getJson("/api/insurancePolicy?{$filterBy}=$value")
+            ->assertStatus(200)
+            ->assertJsonCount($count, 'data')
+            ->assertJsonFragment($assertion);
+    }
+
+    public function testPagination()
+    {
+        $user = $this->createUser();
+        Passport::actingAs($user);
+        $user->assignRole('User');
+        InsurancePolicy::factory(4)->create();
+
+        $response = $this->getJson('/api/insurancePolicy?limit=2&page=1');
+
+        $response->assertStatus(200)
+            ->assertJsonCount(2, 'data')
+            ->assertJsonStructure([
+                'data',
+                'links',
+                'meta',
+            ]);
+    }
+
     public function testCanCreateInsurancePolicy()
     {
         $user = $this->createUser();
@@ -229,4 +289,34 @@ class InsurancePolicyTest extends TestCase
             ['api/insurancePolicy/{id}', 'deleteJson'],
         ];
     }
+
+   public function getAppliedFilters(): array
+   {
+        return [
+            'filter_by_status_active' => [
+                'filter_by' => 'status',
+                'value' => 'Active',
+                'assertion' => ['policy_no' => 'POLICY-12345'],
+                'expected_count' => 1,
+            ],
+            'filter_by_policy_type_health' => [
+                'filter_by' => 'policy_type',
+                'value' => 'Health',
+                'assertion' => ['policy_no' => 'POLICY-12345'],
+                'expected_count' => 1,
+            ],
+            'filter_by_keyword_customer_name' => [
+                'filter_by' => 'keyword',
+                'value' => 'Jane',
+                'assertion' => ['policy_no' => 'POLICY-67890-12345'],
+                'expected_count' => 1,
+            ],
+            'filter_by_date_range' => [
+                'filter_by' => 'start_date',
+                'value' => now()->subDays(10)->toDateString() . '&end_date=' . now()->subDays(5)->toDateString(),
+                'assertion' => ['policy_no' => 'POLICY-12345'],
+                'expected_count' => 1,
+            ],
+        ];
+   }
 }

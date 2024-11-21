@@ -11,7 +11,7 @@
         v-bind="$attrs"
         :class="isBlur ? 'text-dark' : 'text-white'"
       >
-        Samuel Tengey
+        Comfy Test
       </router-link>
       <button
         class="navbar-toggler shadow-none ms-2"

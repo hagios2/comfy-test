@@ -16,7 +16,7 @@
           </div>
           <div class="col-lg-3 col-md-6 col-sm-6 mt-lg-0 mt-4">
             <mini-statistics-card
-              :title="{ text: 'Total Premium', value: stats.total_premium_amount }"
+              :title="{ text: 'Total Premium', value: stats?.total_premium_amount ?? 0 }"
               detail="Includes All Policies"
               :icon="{
                 name: 'leaderboard',
