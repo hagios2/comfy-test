@@ -73,7 +73,15 @@ const submit = async () => {
     showMessage('success', response.data.message);
     await router.push('/policies');
   } catch (error) {
-    showMessage('error', 'Failed to save customer.');
+    console.log(error)
+    const errors = error.response.data.errors
+    console.log('here', errors)
+    if (errors.length > 0) {
+      errors.forEach(err => showMessage('error', err.detail))
+    } else {
+       showMessage('error', error.response.data.message)
+    }
+    // showMessage('error', 'Failed to save customer.');
   }
 };
 
